@@ -9,9 +9,27 @@
 	<svg width="960" height="600" id = "map"></svg>
 	<script src="https://d3js.org/d3.v4.min.js"></script>
 	<script src="https://d3js.org/topojson.v2.min.js"></script>
+	<input id = "slider" type = "range" min = "1" max = "17" step = "1">
+	<label for "slider"> year </label>
+	<output for="slider" id="label">50</output>
 	<script>
-		var svg = d3.select("#map");
-		
+		var terrorismData;
+		var firearmData;
+		//d3.select('#slider7').call(d3.slider().axis(true).min(0).max(1024).step(100));
+
+		d3.queue()
+		.defer(d3.json, "data/terrorism-in-america.json")
+		.defer(d3.csv, "data/nics-firearm-background-checks.csv")
+		.await(function (error, data1, data2) {
+			terrorismData = data1.people_protected;
+			firearmData = data2;
+			console.log(terrorismData);
+			console.log(firearmData);
+		});
+
+		function outputUpdate(vol){
+			document.querySelector('#label').value = vol + 2000;
+		}
 	</script>
 </body>
 
