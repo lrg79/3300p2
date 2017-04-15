@@ -3,33 +3,379 @@
 	<title> Project 2 </title>
 </head>
 <style>
+	#slider, #yearLabel, #terrorMap, #gunMap{
+		margin-left:auto;
+		margin-right:auto;
+		display:block;
+	}
+	#yearLabel, h1, h2{
+		text-align:center;
+	}
 </style>
 
 <body>
-	<svg width="960" height="600" id = "map"></svg>
+	<h1> relationship between terrorism and firearm background checks </h1>
+	<input id = "slider" type = "range" min = "1" max = "17" step = "1" value = "1">
+	<label for "slider" id = "yearLabel"> year </label>
+	<br>
+	<h2> Domestic Terrorism </h2>
+	<svg width="960" height="600" id = "terrorMap"></svg>
+	<h2> Number of Background Checks </h2>
+	<svg width="960" height="600" id = "gunMap"></svg>
 	<script src="https://d3js.org/d3.v4.min.js"></script>
 	<script src="https://d3js.org/topojson.v2.min.js"></script>
-	<input id = "slider" type = "range" min = "1" max = "17" step = "1">
-	<label for "slider"> year </label>
-	<output for="slider" id="label">50</output>
+	<script src="https://d3js.org/d3.v4.min.js"></script>
 	<script>
+		var stateIds = [
+        {
+          "state": "Alabama",
+          "index" : 1
+        },
+
+        {
+          "state": "Alaska",
+          "index" : 2
+        },
+
+        {
+          "state": "Arizona",
+          "index" : 4
+        },
+
+        {
+          "state": "Arkansas",
+          "index" : 5
+        },
+
+        {
+          "state": "California",
+          "index" : 6
+        },
+
+        {
+          "state": "Colorado",
+          "index" : 8
+        },
+
+        {
+          "state": "Connecticut",
+          "index" : 9
+        },
+
+        {
+          "state": "Delaware",
+          "index" : 10
+        },
+
+        {
+          "state": "Florida",
+          "index" : 12
+        },
+
+        {
+          "state": "Georgia",
+          "index" : 13
+        },
+
+        {
+          "state": "Hawaii",
+          "index" : 15
+        },
+
+        {
+          "state": "Idaho",
+          "index" : 16
+        },
+
+        {
+          "state": "Illinois",
+          "index" : 17
+        },
+
+        {
+          "state": "Indiana",
+          "index" : 18
+        },
+
+        {
+          "state": "Iowa",
+          "index" : 19
+        },
+
+        {
+          "state": "Kansas",
+          "index" : 20
+        },
+
+        {
+          "state": "Kentucky",
+          "index" : 21
+        },
+
+        {
+          "state": "Louisiana",
+          "index" : 22
+        },
+
+        {
+          "state": "Maine",
+          "index" : 23
+        },
+
+        {
+          "state": "Maryland",
+          "index" : 24
+        },
+
+        {
+          "state": "Massachusetts",
+          "index" : 25
+        },
+
+        {
+          "state": "Michigan",
+          "index" : 26
+        },
+
+        {
+          "state": "Minnesota",
+          "index" : 27
+        },
+
+        {
+          "state": "Mississippi",
+          "index" : 28
+        },
+
+        {
+          "state": "Missouri",
+          "index" : 29
+        },
+
+        {
+          "state": "Montana",
+          "index" : 30
+        },
+
+        {
+          "state": "Nebraska",
+          "index" : 31
+        },
+
+        {
+          "state": "Nevada",
+          "index" : 32
+        },
+
+        {
+          "state": "New Hampshire",
+          "index" : 33
+        },
+
+        {
+          "state": "New Jersey",
+          "index" : 34
+        },
+
+        {
+          "state": "New Mexico",
+          "index" : 35
+        },
+
+        {
+          "state": "New York",
+          "index" : 36
+        },
+
+        {
+          "state": "North Carolina",
+          "index" : 37
+        },
+
+        {
+          "state": "North Dakota",
+          "index" : 38
+        },
+
+        {
+          "state": "Ohio",
+          "index" : 39
+        },
+
+        {
+          "state": "Oklahoma",
+          "index" : 40
+        },
+
+        {
+          "state": "Oregon",
+          "index" : 41
+        },
+
+        {
+          "state": "Pennsylvania",
+          "index" : 42
+        },
+
+        {
+          "state": "Rhode Island",
+          "index" : 44
+        },
+
+        {
+          "state": "South Carolina",
+          "index" : 45
+        },
+
+        {
+          "state": "South Dakota",
+          "index" : 46
+        },
+
+        {
+          "state": "Tennessee",
+          "index" : 47
+        },
+
+        {
+          "state": "Texas",
+          "index" : 48
+        },
+
+        {
+          "state": "Utah",
+          "index" : 49
+        },
+
+        {
+          "state": "Vermont",
+          "index" : 50
+        },
+
+        {
+          "state": "Virginia",
+          "index" : 51
+        },
+
+        {
+          "state": "Washington",
+          "index" : 53
+        },
+
+        {
+          "state": "West Virginia",
+          "index" : 54
+        },
+
+        {
+          "state": "Wisconson",
+          "index" : 55
+        },
+
+        {
+          "state": "Wyoming",
+          "index" : 56
+        }
+    ];	
+
+    	var projection = d3.geoAlbersUsa().scale(75);
+		var pathGenerator = d3.geoPath().projection(projection);
+
+		var states;
 		var terrorismData;
 		var firearmData;
-		//d3.select('#slider7').call(d3.slider().axis(true).min(0).max(1024).step(100));
 
 		d3.queue()
+		.defer(d3.json, "data/us.json")
 		.defer(d3.json, "data/terrorism-in-america.json")
 		.defer(d3.csv, "data/nics-firearm-background-checks.csv")
-		.await(function (error, data1, data2) {
+		.await(function (error, rawMap, data1, data2) {
+			states = topojson.feature(rawMap, rawMap.objects.states);
 			terrorismData = data1.people_protected;
 			firearmData = data2;
+			console.log("Call1");
+			console.log(firearmData);
+			showTerrorMap(terrorismData, 2001);
+			showGunMap(firearmData, 2001);
+			console.log("terrorismData");
 			console.log(terrorismData);
+			console.log("firearmData");
 			console.log(firearmData);
 		});
 
-		function outputUpdate(vol){
-			document.querySelector('#label').value = vol + 2000;
+		var slider = document.getElementById("slider");
+
+		slider.oninput = function(){
+			showTerrorMap(terrorismData, slider.value + 2000);
+			showGunMap(firearmData, slider.value + 2000);
 		}
+
+
+		function showTerrorMap(terrorismData, year){
+			var terrorYearData = [];
+			for(var i = 0; i < terrorismData.length; i++){
+				/*if(i > 10 && i < 100){
+					console.log(terrorismData[i]);
+				}*/
+				if(parseInt(terrorismData[i].year_charged_or_deceased) === year){
+					terrorYearData.push(terrorismData[i]);
+				}
+			}
+			console.log(year);
+			var quantize = d3.scaleQuantize()
+				.domain([0, 30])
+				.range(['##ffffff', '#ffe6e6', '#ffcccc', '#ffb3b3', '#ff9999', '#ff8080', '#ff6666', '#ff4d4d', '#ff3333', '#ff1a1a']);
+			var svg = d3.select("#terrorMap");
+			projection.fitExtent([[0,0], [svg.attr("width"), svg.attr("height")]], states);
+			pathGenerator = d3.geoPath().projection(projection);
+			var paths = svg.selectAll("path.country").data(states.features);
+			paths.enter().append("path").attr("class", "country")
+			.merge(paths)
+			.transition().duration(1000)
+			.style("fill", function (d) {
+				var count;
+				for(var i = 0; i < terrorYearData; i++){
+					if(getID(terrorYearData[i].state_charged) === d.id){
+						count++;
+					}
+				}
+
+				console.log(getID(terrorYearData[0].state_charged));
+
+				return quantize(count);
+			})
+			.attr("d", function (county) {
+				return pathGenerator(county);
+			});
+		}
+
+		function showGunMap(firearmData, year){
+			var svg = d3.select("#gunMap");
+			projection.fitExtent([[0,0], [svg.attr("width"), svg.attr("height")]], states);
+			pathGenerator = d3.geoPath().projection(projection);
+			var paths = svg.selectAll("path.country").data(states.features);
+			paths.enter().append("path").attr("class", "country")
+			.merge(paths)
+			.transition().duration(1000)
+			.style("fill", function (d) {
+				return "blue";
+			})
+			.attr("d", function (county) {
+				return pathGenerator(county);
+			});
+
+			var check = year + "-01";
+			var gunYearData;
+		}
+
+		function getID(state){
+			for(var i = 0; i < stateIds.length; i++){
+				if(stateIds[i].state === state){
+					return stateIds[i].index;
+				}
+			}
+		}
+
 	</script>
 </body>
 
