@@ -1,6 +1,7 @@
 <!DOCTYPE  html>
 <head>
 	<title> Project 2 </title>
+	<link href='https://fonts.googleapis.com/css?family=Catamaran' rel='stylesheet' type='text/css'/>
 </head>
 <style>
 	#slider, #yearLabel, #terrorMap, #gunMap{
@@ -8,23 +9,80 @@
 		margin-right:auto;
 		display:block;
 	}
-	#yearLabel, h1, h2{
+	#yearLabel, h1, h2, h4, h3, #info{
 		text-align:center;
+		font-family:"Catamaran";
+		color:white;
 	}
+	.label, .cell, .legendCells{
+		font-family:"Catamaran";
+		fill:white;
+	}
+	#container{
+		color:white;
+		width:100%;
+	}
+	#scale{
+		width:5%;
+		float:left;
+	}
+	#left{
+		width:60%;
+		float:left;
+	}
+	#right{
+		width:30%;
+		float:left;
+	}
+	#slider{
+		width:500px;
+	}
+	.column {
+	  float: left;
+	}
+
 </style>
 
-<body>
-	<h1> relationship between terrorism and firearm background checks </h1>
-	<input id = "slider" type = "range" min = "1" max = "17" step = "1" value = "1">
-	<label for "slider" id = "yearLabel"> year </label>
-	<br>
-	<h2> Domestic Terrorism </h2>
-	<svg width="960" height="600" id = "terrorMap"></svg>
-	<h2> Number of Background Checks </h2>
-	<svg width="960" height="600" id = "gunMap"></svg>
+<body bgcolor = "#000000">
+	<div id = "container">
+		<h1> Relationship Between Terrorism and Firearm Ownership </h1>
+		<div id = "scale">
+		</div>
+		<div id = "left">
+			<input id = "slider" type = "range" min = "2001" max = "2017" step = "1" value = "2001" list="steplist">
+			<datalist id="steplist">
+    			<option>2001</option>
+				<option>2002</option>
+				<option>2003</option>
+				<option>2004</option>
+				<option>2005</option>
+				<option>2006</option>
+				<option>2007</option>
+				<option>2008</option>
+				<option>2009</option>
+				<option>2010</option>
+				<option>2011</option>
+				<option>2012</option>
+				<option>2013</option>
+				<option>2014</option>
+				<option>2015</option>
+				<option>2016</option>
+				<option>2017</option>
+			</datalist>
+			<label for "slider" id = "yearLabel"> Year 2001</label>
+			<h3> Domestic Terrorism </h3>
+			<svg width="800" height="400" id = "terrorMap"></svg>
+			<h3> Number of Firearm Background Checks </h3>
+			<svg width="800" height="400" id = "gunMap"></svg>
+		</div>
+		<div id = "right">
+			<h2> Hover over state to get specific statistics </h2>
+			<div id = "info"></div>
+		</div>
+	</div>
 	<script src="https://d3js.org/d3.v4.min.js"></script>
 	<script src="https://d3js.org/topojson.v2.min.js"></script>
-	<script src="https://d3js.org/d3.v4.min.js"></script>
+	<script src="http://d3-legend.susielu.com/d3-legend.min.js"></script>
 	<script>
 		var stateIds = [
         {
@@ -268,7 +326,7 @@
         },
 
         {
-          "state": "Wisconson",
+          "state": "Wisconsin",
           "index" : 55
         },
 
@@ -276,15 +334,16 @@
           "state": "Wyoming",
           "index" : 56
         }
-    ];	
-
+    ];
+    	var terrorStates = [];
+    	var gunStates= [];
     	var projection = d3.geoAlbersUsa().scale(75);
 		var pathGenerator = d3.geoPath().projection(projection);
-
+		var firearmFiltered = [];
 		var states;
 		var terrorismData;
 		var firearmData;
-
+		var fscale;
 		d3.queue()
 		.defer(d3.json, "data/us.json")
 		.defer(d3.json, "data/terrorism-in-america.json")
@@ -293,79 +352,143 @@
 			states = topojson.feature(rawMap, rawMap.objects.states);
 			terrorismData = data1.people_protected;
 			firearmData = data2;
-			console.log("Call1");
-			console.log(firearmData);
 			showTerrorMap(terrorismData, 2001);
-			showGunMap(firearmData, 2001);
-			console.log("terrorismData");
-			console.log(terrorismData);
-			console.log("firearmData");
-			console.log(firearmData);
+			//filtering out to months of january
+			for(var i = 0; i < firearmData.length; i++){
+				var month = firearmData[i].month.substring(5, 7);
+				if(month === "01"){
+					firearmFiltered.push(firearmData[i]);
+				}
+			}
+			showGunMap(firearmFiltered, 2001);
 		});
 
 		var slider = document.getElementById("slider");
 
 		slider.oninput = function(){
-			showTerrorMap(terrorismData, slider.value + 2000);
-			showGunMap(firearmData, slider.value + 2000);
+			//console.log(terrorismData);
+			var year = slider.value;
+			console.log("slider value", year);
+			showTerrorMap(terrorismData, year);
+			showGunMap(firearmFiltered, year);
+			document.getElementById("yearLabel").value = "";
+			document.getElementById("yearLabel").innerHTML = "Year " + year;
+			//console.log(document.getElementById("yearLabel").value);
 		}
 
+		var fireScale = d3.scaleQuantize()
+				.domain([0, 50000])
+				.range(['#FFFFFF','#f7f4f9','#e7e1ef','#d4b9da','#c994c7','#df65b0','#e7298a','#ce1256','#980043','#67001f']);
+		column("# Firearms Owned", fireScale, "gunScale");
+		var gunScale = d3.scaleQuantize()
+				.domain([0, 10])
+				.range(['#ffffff', '#ffffe5','#f7fcb9','#d9f0a3','#addd8e','#78c679','#41ab5d','#238443','#006837','#004529']);
 
 		function showTerrorMap(terrorismData, year){
 			var terrorYearData = [];
 			for(var i = 0; i < terrorismData.length; i++){
-				/*if(i > 10 && i < 100){
-					console.log(terrorismData[i]);
-				}*/
-				if(parseInt(terrorismData[i].year_charged_or_deceased) === year){
+				if(parseInt(terrorismData[i].year_charged_or_deceased) === parseInt(year)){
 					terrorYearData.push(terrorismData[i]);
 				}
 			}
-			console.log(year);
-			var quantize = d3.scaleQuantize()
-				.domain([0, 30])
-				.range(['##ffffff', '#ffe6e6', '#ffcccc', '#ffb3b3', '#ff9999', '#ff8080', '#ff6666', '#ff4d4d', '#ff3333', '#ff1a1a']);
+
 			var svg = d3.select("#terrorMap");
 			projection.fitExtent([[0,0], [svg.attr("width"), svg.attr("height")]], states);
 			pathGenerator = d3.geoPath().projection(projection);
 			var paths = svg.selectAll("path.country").data(states.features);
 			paths.enter().append("path").attr("class", "country")
 			.merge(paths)
-			.transition().duration(1000)
 			.style("fill", function (d) {
-				var count;
-				for(var i = 0; i < terrorYearData; i++){
+				terrorStates.push(d3.select(this));
+				var count = 0;
+				for(var i = 0; i < terrorYearData.length; i++){
 					if(getID(terrorYearData[i].state_charged) === d.id){
 						count++;
 					}
 				}
 
-				console.log(getID(terrorYearData[0].state_charged));
-
-				return quantize(count);
+				return gunScale(count);
 			})
-			.attr("d", function (county) {
-				return pathGenerator(county);
+			.style("stroke", "gray")
+			.on("mouseover", function(d) {
+				displayInfo(firearmFiltered, terrorismData, year, d.id, d);
+				d3.select(this)
+					.transition()
+					.duration(300)
+					.style("fill", "black");
+			})
+			.on("mouseout", function(d){
+				d3.select(this)
+					.transition()
+					.duration(300)
+					.style("fill", function(d){
+						var count = 0;
+						for(var i = 0; i < terrorYearData.length; i++){
+							if(getID(terrorYearData[i].state_charged) === d.id){
+								count++;
+					
+							}
+						}
+						return gunScale(count);
+					});
+			})
+			.attr("d", function (d) {
+				return pathGenerator(d);
 			});
 		}
 
-		function showGunMap(firearmData, year){
+		column("# Terrorist Attacks", gunScale, "terrorScale");
+
+		function showGunMap(firearmFiltered, year){
+			var gunYear = [];
+			var check = year + "-01";
+			console.log("check", check);
+			for(var i = 0; i < firearmFiltered.length; i++){
+				if(firearmFiltered[i].month === check){
+					gunYear.push(firearmFiltered[i]);
+				}
+			}
 			var svg = d3.select("#gunMap");
 			projection.fitExtent([[0,0], [svg.attr("width"), svg.attr("height")]], states);
 			pathGenerator = d3.geoPath().projection(projection);
 			var paths = svg.selectAll("path.country").data(states.features);
 			paths.enter().append("path").attr("class", "country")
 			.merge(paths)
-			.transition().duration(1000)
+			.style("stroke", "gray")
 			.style("fill", function (d) {
-				return "blue";
+				gunStates.push(d3.select(this));
+				var scale = 0;
+				for(var i = 0; i < gunYear.length; i++){
+					if(getID(gunYear[i].state) === d.id){
+						scale = gunYear[i].totals;
+					}
+				}
+				return fireScale(scale);
 			})
-			.attr("d", function (county) {
-				return pathGenerator(county);
+			.on("mouseover", function(d) {
+				displayInfo(firearmFiltered, terrorismData, year, d.id, d);
+				d3.select(this)
+					.transition()
+					.duration(300)
+					.style("fill", "black");
+			})
+			.on("mouseout", function(d){
+				d3.select(this)
+					.transition()
+					.duration(300)
+					.style("fill", function(d){
+						var scale = 0;
+						for(var i = 0; i < gunYear.length; i++){
+							if(getID(gunYear[i].state) === d.id){
+								scale = gunYear[i].totals;
+							}
+						}
+						return fireScale(scale);
+					});
+			})
+			.attr("d", function (d) {
+				return pathGenerator(d);
 			});
-
-			var check = year + "-01";
-			var gunYearData;
 		}
 
 		function getID(state){
@@ -375,6 +498,111 @@
 				}
 			}
 		}
+
+		function getState(id){
+			for(var i = 0; i < stateIds.length; i++){
+				if(stateIds[i].index === id){
+					return stateIds[i].state;
+				}
+			}
+		}
+
+		function displayInfo(firearmFiltered, terrorismData, year, id, state){
+			//console.log(state);
+			var state = getState(id);
+			//console.log(d3.select("#info"));
+			var info = d3.select("#info");
+			info.selectAll("text").remove();
+			info.append("text").text(state);
+			info.append("text").html("<br>");
+
+			//data of terrorism for that year
+			var terrorYearData = [];
+			for(var i = 0; i < terrorismData.length; i++){
+				if(parseInt(terrorismData[i].year_charged_or_deceased) === parseInt(year)){
+					terrorYearData.push(terrorismData[i]);
+				}
+			}
+
+			var gunYear = [];
+			var check = year + "-01";
+			for(var i = 0; i < firearmFiltered.length; i++){
+				if(firearmFiltered[i].month === check){
+					gunYear.push(firearmFiltered[i]);
+				}
+			}
+			
+			var count=0;;
+			
+			for(var i = 0; i < terrorYearData.length; i++){
+				if(terrorYearData[i].state_charged === state){
+					count++;
+				}
+			}
+			info.append("text").html("<br>");
+			info.append("text")
+			.text("Terrorist attacks in " + state + " during " + year + ": " + count);
+			info.append("text").html("<br>");
+			
+
+			for(var i = 0; i < terrorYearData.length; i++){
+				if(terrorYearData[i].state_charged === state){
+					info.append("text").html("<br>");
+					info.append("text").text("Name of Perpetrator: " + terrorYearData[i].first_name + " " + terrorYearData[i].last_name);
+					
+				}
+			}
+
+			info.append("text").html("<br>");
+			for(var i = 0; i < gunYear.length; i++){
+				if(gunYear[i].state === state){
+					info.append("text").html("<br>");
+					info.append("text").text("Gun Background Checks: " + gunYear[i].totals);
+				}
+			}
+		}
+
+		function column(title, scale, id) {
+
+			var div = d3.select("#scale").append("div")
+		    .attr("class", "column");
+
+		    div.append("h4").text(title);
+
+			var svg = d3.select("#scale").append("svg")
+				.attr("height", 500)
+				.attr("width", 280);
+
+		    var legend = d3.legendColor()
+		   	 	.labelFormat(d3.format(",.0f"))
+		    	.cells(10)
+		    	.scale(scale);
+
+			  svg.append("g")
+			    .attr("class", "legendQuant")
+			    .attr("transform", "translate(20,20)");
+
+			  svg.select(".legendQuant")
+			    .call(legend);
+		}
+
+		function getIndex(map, object){
+			if(map === "gun"){
+				for(var i = 0; i < gunStates.length; i++){
+					if(gunStates[i] === object){
+						return i;
+					}
+				}
+			}
+			else{
+				for(var i = 0; i < terrorStates.length; i++){
+					if(terrorStates[i] === object){
+						return i;
+					}
+				}
+			}
+		}
+
 
 	</script>
 </body>
